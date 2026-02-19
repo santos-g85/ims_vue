@@ -3,6 +3,7 @@ import { useStockGroupStore } from '@/stores/stockGroup.store'
 import { computed, onMounted, ref } from 'vue'
 import { FilterMatchMode } from '@primevue/core/api'
 import { useToast } from 'primevue/usetoast'
+import type { StockGroup } from '@/types/StockGroup'
 
 const stockGroupStore = useStockGroupStore()
 onMounted(() => {
@@ -14,8 +15,10 @@ const dt = ref()
 const productDialog = ref(false)
 const deleteProductDialog = ref(false)
 const deleteProductsDialog = ref(false)
-const product = ref({})
-const selectedProducts = ref([])
+
+const product = ref<Partial<StockGroup>>({})
+const selectedProducts = ref<StockGroup[]>([])
+
 const filters = ref({ global: { value: null, matchMode: FilterMatchMode.CONTAINS } })
 const submitted = ref(false)
 
@@ -42,11 +45,13 @@ function hideDialog() {
 async function saveProduct() {
   submitted.value = true
 
+  // Use groupName consistently
   if (!product.value.groupName?.trim()) return
 
   try {
     if (product.value.id) {
-      await stockGroupStore.updateStockGroup(product.value.id, product.value)
+      // TypeScript now knows .id exists because product is Partial<StockGroup>
+      await stockGroupStore.updateStockGroup(product.value.id, product.value as StockGroup)
       toast.add({ severity: 'success', summary: 'Success', detail: 'Group Updated', life: 3000 })
     } else {
       await stockGroupStore.createStockGroup(product.value)
@@ -55,26 +60,28 @@ async function saveProduct() {
 
     productDialog.value = false
     product.value = {}
-  } catch (e) {
+  } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Operation failed', life: 3000 })
   }
 }
 
-function editProduct(prod) {
+function editProduct(prod: StockGroup) {
   product.value = { ...prod }
   productDialog.value = true
 }
 
-function confirmDeleteProduct(prod) {
+function confirmDeleteProduct(prod: StockGroup) {
   product.value = prod
   deleteProductDialog.value = true
 }
 
 async function deleteProduct() {
-  await stockGroupStore.deleteStockGroup(product.value.id)
-  deleteProductDialog.value = false
-  product.value = {}
-  toast.add({ severity: 'success', summary: 'Success', detail: 'Group Deleted', life: 3000 })
+  if (product.value.id !== undefined) {
+    await stockGroupStore.deleteStockGroup(product.value.id)
+    deleteProductDialog.value = false
+    product.value = {}
+    toast.add({ severity: 'success', summary: 'Success', detail: 'Group Deleted', life: 3000 })
+  }
 }
 
 function exportCSV() {
@@ -192,13 +199,15 @@ async function deleteSelectedProducts() {
           <label for="name" class="block font-bold mb-3">Name</label>
           <InputText
             id="name"
-            v-model.trim="product.name"
+            v-model.trim="product.groupName"
             required="true"
             autofocus
-            :invalid="submitted && !product.name"
+            :invalid="submitted && !product.groupName"
             fluid
           />
-          <small v-if="submitted && !product.name" class="text-red-500">Name is required.</small>
+          <small v-if="submitted && !product.groupName" class="text-red-500"
+            >Name is required.</small
+          >
         </div>
         <div>
           <label for="parentGroup" class="block font-bold mb-3">Parent Group</label>
@@ -228,7 +237,7 @@ async function deleteSelectedProducts() {
       <div class="flex items-center gap-4">
         <i class="pi pi-exclamation-triangle !text-3xl" />
         <span v-if="product"
-          >Are you sure you want to delete <b>{{ product.name }}</b
+          >Are you sure you want to delete <b>{{ product.groupName }}</b
           >?</span
         >
       </div>

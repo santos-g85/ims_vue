@@ -23,7 +23,7 @@ export const useStockGroupStore = defineStore('stockGroup', () => {
   async function createStockGroup(data: Partial<StockGroup>) {
     loading.value = true
     try {
-      const newGroup = await StockGroupService.createStockGroup(data)
+      const newGroup = (await StockGroupService.createStockGroup(data)) as StockGroup
       stockGroups.value.push(newGroup)
       return newGroup
     } finally {

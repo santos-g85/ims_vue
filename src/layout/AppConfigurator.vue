@@ -32,6 +32,10 @@ interface MenuModeOption {
 }
 
 interface PresetExtension {
+  [key: string]: string | number | object | undefined
+  [key: number]: string | number | object | undefined
+  [key: symbol]: string | number | object | undefined
+
   semantic: {
     primary: ColorPalette | Record<string, string>
     colorScheme: {
