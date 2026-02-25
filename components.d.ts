@@ -13,10 +13,10 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Button: typeof import('primevue/button')['default']
-    Card: typeof import('primevue/card')['default']
     Column: typeof import('primevue/column')['default']
     DataTable: typeof import('primevue/datatable')['default']
     Dialog: typeof import('primevue/dialog')['default']
+    Divider: typeof import('primevue/divider')['default']
     IconField: typeof import('primevue/iconfield')['default']
     InputIcon: typeof import('primevue/inputicon')['default']
     InputText: typeof import('primevue/inputtext')['default']
@@ -31,10 +31,10 @@ declare module 'vue' {
 // For TSX support
 declare global {
   const Button: typeof import('primevue/button')['default']
-  const Card: typeof import('primevue/card')['default']
   const Column: typeof import('primevue/column')['default']
   const DataTable: typeof import('primevue/datatable')['default']
   const Dialog: typeof import('primevue/dialog')['default']
+  const Divider: typeof import('primevue/divider')['default']
   const IconField: typeof import('primevue/iconfield')['default']
   const InputIcon: typeof import('primevue/inputicon')['default']
   const InputText: typeof import('primevue/inputtext')['default']

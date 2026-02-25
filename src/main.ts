@@ -11,6 +11,7 @@ import StyleClass from 'primevue/styleclass'
 import Toast from 'primevue/toast'
 import '@/assets/tailwind.css'
 import '@/assets/styles.scss'
+import { Form } from '@primevue/forms';
 
 const app = createApp(App)
 app.use(PrimeVue, {
@@ -21,10 +22,12 @@ app.use(PrimeVue, {
     },
   },
 })
+
 app.use(createPinia())
 app.use(router)
 app.use(ToastService)
-app.component('ToastService', Toast)
+app.component('Toast', Toast);
+app.component('Form', Form);
 app.directive('styleclass', StyleClass)
 app.use(ConfirmationService)
 app.mount('#app')
