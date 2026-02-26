@@ -1,29 +1,33 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import { z } from 'zod'
+import {  z } from 'zod'
 import { useToast } from 'primevue/usetoast'
-import { type FormSubmitEvent } from '@primevue/forms';
+import { type FormSubmitEvent } from '@primevue/forms'
 import { useAuthStore } from '@/stores/Auth.store'
-import type { LoginRequest} from '@/types/Auth'
+import type { LoginRequest } from '@/types/Auth'
 import { ENV } from '@/env'
+import router from '@/router'
+import { useImageStore } from '@/stores/Image.store'
+const imageStore = useImageStore()
 
 const authstore = useAuthStore()
-
 const toast = useToast()
 
 const initialValues = ref({
-  username: '',
+  email: '',
   password: '',
 })
 
 const resolver = zodResolver(
   z.object({
-    username: z.string().min(1, { message: 'Email is required.' }).email({ message: 'Invalid email address.' }),
+    email: z
+      .string()
+      .min(1, { message: 'Email is required.' })
+      .email({ message: 'Invalid email address.' }),
     password: z
       .string()
       .min(3, { message: 'Minimum 5 characters.' })
-      .max(8, { message: 'Maximum 8 characters.' })
       .refine((value) => /[a-z]/.test(value), {
         message: 'Must have a lowercase letter.',
       })
@@ -36,20 +40,21 @@ const resolver = zodResolver(
   }),
 )
 
-const onFormSubmit = async (e : FormSubmitEvent) => {
+const onFormSubmit = async (e: FormSubmitEvent) => {
   // e.originalEvent: Represents the native form submit event.
   // e.valid: A boolean that indicates whether the form is valid or not.
   // e.states: Contains the current state of each form field, including validity status.
   // e.errors: An object that holds any validation errors for the invalid fields in the form.
   // e.values: An object containing the current values of all form fields.
   // e.reset: A function that resets the form to its initial state.
-  const loginRequest : LoginRequest =(
-    e.values.username,
-    e.values.password
-  )
+  const loginRequest: LoginRequest = {
+    email: e.values.email,
+    password: e.values.password,
+  }
   if (e.valid) {
     await authstore.login(loginRequest)
-    toast.add({ severity: 'success', summary: 'Login successful.', life: 3000 })
+    toast.add({ severity: 'success', summary: 'Login successful.', life: 2000 })
+    router.push('/dashboard')
     e.reset()
   }
 }
@@ -65,11 +70,12 @@ const onFormSubmit = async (e : FormSubmitEvent) => {
       style="width: 25rem; overflow: hidden"
     >
       <div class="flex flex-col items-center gap-2 mb-6">
-        <img src="../../assets/img/logo.jpg" alt="Logo" class="w-16 h-16 mb-4 mx-auto" />
+          <img :src="imageStore.logo" alt="Logo" height="50px;" />
         <span>{{ ENV.APP_NAME }}</span>
       </div>
       <Divider layout="horizontal" class="!flex md:!hidden" align="center"><b>Sign In</b></Divider>
       <Form
+        loading=true
         v-slot="$form"
         :initialValues
         :resolver
@@ -77,15 +83,19 @@ const onFormSubmit = async (e : FormSubmitEvent) => {
         class="flex flex-col gap-4 w-full"
       >
         <div class="flex flex-col gap-1" style="margin-top: 10px">
-<label for="username" class="font-medium text-surface-900 dark:text-surface-0">Email</label>
-          <InputText name="username" type="text" placeholder="" fluid />
-          <Message v-if="$form.username?.invalid" severity="error" size="small" variant="simple">
-            {{ $form.username.error?.message }}
+          <label for="username" class="font-medium text-surface-900 dark:text-surface-0"
+            >Email</label
+          >
+          <InputText name="email" type="text" placeholder="" fluid />
+          <Message v-if="$form.email?.invalid" severity="error" size="small" variant="simple">
+            {{ $form.email.error?.message }}
           </Message>
         </div>
 
         <div class="flex flex-col gap-1" style="margin-top: 10px">
-<label for="password" class="font-medium text-surface-900 dark:text-surface-0">Password</label>
+          <label for="password" class="font-medium text-surface-900 dark:text-surface-0"
+            >Password</label
+          >
           <Password name="password" placeholder="" :feedback="false" toggleMask fluid />
           <Message v-if="$form.password?.invalid" severity="error" size="small" variant="simple">
             <ul class="my-0 px-4 flex flex-col gap-1">

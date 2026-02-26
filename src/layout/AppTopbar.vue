@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useLayout } from '@/layout/composables/layout'
-
+import { ENV } from '@/env'
+import { useImageStore } from '@/stores/Image.store'
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout()
+const imageStore = useImageStore()
 </script>
 
 <template>
@@ -11,8 +13,8 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout()
         <i class="pi pi-bars"></i>
       </button>
       <router-link to="/" class="layout-topbar-logo">
-        <img src="../assets/img/logo.jpg" alt="Jooneli Trading" style="height: 40px" />
-        <span>Jooneli Trading</span>
+          <img :src="imageStore.logo" alt="Logo" height="40px;" />
+        <span>{{ ENV.APP_NAME }}</span>
       </router-link>
     </div>
 

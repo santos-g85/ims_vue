@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { useStockGroupStore } from '@/stores/stock.store'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { FilterMatchMode } from '@primevue/core/api'
 import { useToast } from 'primevue/usetoast'
 import type { StockGroup } from '@/types/Stock'
-import { watch } from 'vue'
-import type { Axios, AxiosError } from 'axios'
 
 const stockGroupStore = useStockGroupStore()
-onMounted(async () => {
-  await stockGroupStore.fetchStockGroups()
+onMounted(() => {
+  stockGroupStore.fetchStockGroups()
 })
 
 const toast = useToast()
@@ -24,13 +22,18 @@ const selectedProducts = ref<StockGroup[]>([])
 const filters = ref({ global: { value: null, matchMode: FilterMatchMode.CONTAINS } })
 const submitted = ref(false)
 
-
+const parentGroupOptions = computed(() => {
+  return stockGroupStore.stockGroups
+    ?.filter((group) => !product.value.id || group.id !== product.value.id)
+    .map((group) => ({
+      label: group.groupName,
+      value: group.id,
+    }))
+})
 
 function openNew() {
   product.value = {}
   submitted.value = false
-  filteredParentGroups.value = [...stockGroupStore.stockGroups]
-  selectedParentGroup.value = null
   productDialog.value = true
 }
 
@@ -64,14 +67,6 @@ async function saveProduct() {
 
 function editProduct(prod: StockGroup) {
   product.value = { ...prod }
-
-  filteredParentGroups.value =
-    stockGroupStore.stockGroups.filter(g => g.id !== prod.id)
-
-  // preselect parent if exists
-  selectedParentGroup.value =
-    stockGroupStore.stockGroups.find(g => g.id === prod.parentGroupId) || null
-
   productDialog.value = true
 }
 
@@ -82,21 +77,13 @@ function confirmDeleteProduct(prod: StockGroup) {
 
 async function deleteProduct() {
   if (product.value.id !== undefined) {
-    try {
-      await stockGroupStore.deleteStockGroup(product.value.id)
-      deleteProductDialog.value = false
-      product.value = {}
-      toast.add({ severity: 'success', summary: 'Success', detail: 'Group Deleted', life: 3000 })
-    } catch (error: unknown) {
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: (error as unknown)?.response?.data?.message || 'Failed to delete group',
-        life: 3000
-      })
-    }
+    await stockGroupStore.deleteStockGroup(product.value.id)
+    deleteProductDialog.value = false
+    product.value = {}
+    toast.add({ severity: 'success', summary: 'Success', detail: 'Group Deleted', life: 3000 })
   }
 }
+
 function exportCSV() {
   dt.value.exportCSV()
 }
@@ -115,32 +102,6 @@ async function deleteSelectedProducts() {
 
   toast.add({ severity: 'success', summary: 'Success', detail: 'Groups Deleted', life: 3000 })
 }
-
-const selectedParentGroup = ref()
-const filteredParentGroups = ref()
-const searchParentGroup = (event: any) => {
-  const query = event.query?.toLowerCase() || ''
-
-  let groups = stockGroupStore.stockGroups
-
-  if (product.value.id) {
-    groups = groups.filter(g => g.id !== product.value.id)
-  }
-
-  if (!query) {
-    filteredParentGroups.value = [...groups]
-    return
-  }
-
-  filteredParentGroups.value =
-    groups.filter((group) =>
-      group.groupName.toLowerCase().includes(query)
-    )
-}
-
-watch(selectedParentGroup, (val) => {
-  product.value.parentGroupId = val?.id ?? null
-})
 </script>
 
 <template>
@@ -151,16 +112,15 @@ watch(selectedParentGroup, (val) => {
           <Button
             label="New"
             icon="pi pi-plus"
+            severity="secondary"
             class="mr-2"
             @click="openNew"
           />
           <Button
             label="Delete"
             icon="pi pi-trash"
-            severity="danger"
-            variant="outlined"
+            severity="secondary"
             @click="confirmDeleteSelected"
-            style="margin-left: 10px" 
             :disabled="!selectedProducts || !selectedProducts.length"
           />
         </template>
@@ -185,7 +145,7 @@ watch(selectedParentGroup, (val) => {
       >
         <template #header>
           <div class="flex flex-wrap gap-2 items-center justify-between">
-            <h4 class="m-0">Stock Group</h4>
+            <h4 class="m-0">Stock Items</h4>
             <IconField>
               <InputIcon>
                 <i class="pi pi-search" />
@@ -249,23 +209,17 @@ watch(selectedParentGroup, (val) => {
             >Name is required.</small
           >
         </div>
-       <div>
-          <label for="parentGroupid" class="block font-bold mb-3">Parent Group</label>
-          <AutoComplete v-model="selectedParentGroup" optionLabel="groupName" :suggestions="filteredParentGroups" @complete="searchParentGroup">
-            <template #option="slotProps">
-                <div class="flex items-center">
-                    <div>{{ slotProps.option.groupName }}</div>
-                </div>
-            </template>
-            <template #header>
-                <div class="font-medium px-3 py-2">Available Groups</div>
-            </template>
-            <template #footer>
-                <div class="px-3 py-3">
-                    <Button label="Add New" fluid severity="secondary" text size="small" icon="pi pi-plus" @click="hideDialog()" />
-                </div>
-            </template>
-        </AutoComplete>
+        <div>
+          <label for="parentGroup" class="block font-bold mb-3">Parent Group</label>
+          <Select
+            id="parentGroup"
+            v-model="product.parentGroupId"
+            :options="parentGroupOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select Parent Group"
+            fluid
+          />
         </div>
       </div>
       <template #footer>
