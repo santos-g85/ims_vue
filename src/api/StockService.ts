@@ -22,23 +22,21 @@ export const StockGroupService =
 }
 
 export const StockCategoryService = {
-
-  async getStockCategories(): Promise<StockCategory[]> {
-    const response = await api.get<StockCategory[]>(`${baseUrl}/stock-categories`)
-    return response.data
+  fetchAll: async (): Promise<StockCategory[]> => {
+    const { data } = await api.get(`${baseUrl}/stock-categories`)
+    return data
   },
 
-  async createStockCategory(data: Partial<StockCategory>): Promise<StockCategory> {
-    const response = await api.post<StockCategory>(`${baseUrl}/stock-categories`, data)
-    return response.data
+  create: async (payload: Partial<StockCategory>) => {
+   const { data } = await api.post(`${baseUrl}/stock-categories`, payload)
+   return data
   },
 
-  async updateStockCategory(id: number, data: Partial<StockCategory>): Promise<StockCategory> {
-    const response = await api.put<StockCategory>(`${baseUrl}/stock-categories/${id}`, data)
-    return response.data
+  update: async (id: number, payload: Partial<StockCategory>) => {
+    await api.put(`${baseUrl}/stock-categories/${id}`, payload)
   },
 
-  async deleteStockCategory(id: number): Promise<void> {
+  delete: async (id: number) => {
     await api.delete(`${baseUrl}/stock-categories/${id}`)
-  },
+  }
 }

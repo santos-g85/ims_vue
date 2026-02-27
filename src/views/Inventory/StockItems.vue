@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import type { StockGroup } from "@/types/Stock"
-import { useStockGroups } from "@/composables/useStockGroups"
+import { useStockGroups } from "@/composables/useStocks"
 
 type AutoCompleteCompleteEvent = { originalEvent: Event; query: string }
 

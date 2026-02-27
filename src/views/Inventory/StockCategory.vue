@@ -1,223 +1,273 @@
 <script setup lang="ts">
-import { useStockCategoryStore, useStockGroupStore } from '@/stores/stock.store'
-import { onMounted, ref } from 'vue'
-import { FilterMatchMode } from '@primevue/core/api'
-import { useToast } from 'primevue/usetoast'
-import type { StockCategory } from '@/types/Stock'
-import router from '@/router'
+import { ref } from 'vue';
+import { FilterMatchMode } from '@primevue/core/api';
+import { useStockCategory, useStockGroups } from '@/composables/useStocks';
+import type { StockCategory, StockGroup } from '@/types/Stock';
 
-type AutoCompleteCompleteEvent = {
-  originalEvent: Event
-  query: string
-}
+type AutoCompleteCompleteEvent = { originalEvent: Event; query: string }
 
-const stockCategoryStore = useStockCategoryStore()
-const stockGroupStore = useStockGroupStore()
+const downloadFilename = "Stock_Category_" + new Date()
 
-onMounted(async () => {
-  await stockCategoryStore.fetchStockCategories()
-  filteredCategories.value = [...stockCategoryStore.stockCategories]
-  await stockGroupStore.fetchStockGroups()
-  filteredParentGroups.value = [...stockGroupStore.stockGroups]
-})
+const {
+  data: stockCategories,
+  isLoading,
+  createMutation,
+  updateMutation,
+  deleteMutation,
+} = useStockCategory()
 
-const submitted = ref(false)
-const products = ref<Partial<StockCategory>>({})
-const selectedProducts = ref<StockCategory[]>([])
+const { data: stockGroups } = useStockGroups()
 
-const toast = useToast()
 const dt = ref()
-const filename = "stock_categories_" + new Date().toISOString().slice(0, 10)
-function exportCSV() {
-  dt.value.exportCSV(filename)
-}
-
-const CreateDialog = ref(false)
-const openNew = () => {
-  CreateDialog.value = true;
-};
-const saveProduct = () => {
-  // Implement save logic here
-  hideDialog();
-  toast.add({ severity: 'success', summary: 'Successful', detail: 'Category Saved', life: 3000 });
-}
-const hideDialog = () => {
-  CreateDialog.value = false;
-}
-
+const productDialog = ref(false)
+const deleteProductDialog = ref(false)
+const deleteProductsDialog = ref(false)
+const product = ref<Partial<StockCategory>>({})
+const selectedProducts = ref<StockCategory[]>([])
 const filters = ref({
-  'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
-});
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+})
+const submitted = ref(false)
 
-const deleteDialog = ref(false);
-const hideDeleteDialog = () => {
-  deleteDialog.value = false;
-}
+const selectedParentGroup = ref<StockGroup | null>(null)
+const filteredParentGroups = ref<StockGroup[]>([])
 
-function confirmDeleteSelected() {
-  deleteDialog.value = true
-}
-const deleteProducts = () => {
-  hideDeleteDialog();
-  toast.add({ severity: 'success', summary: 'Successful', detail: 'Category Deleted', life: 3000 });
-}
-const editProduct = (product: StockCategory) => {
-  toast.add({ severity: 'info', summary: 'Info', detail: `Edit ${product.name} not implemented`, life: 3000 });
-}
-const confirmDeleteProduct = (product: StockCategory) => {
-  products.value = product
-  deleteDialog.value = true
-}
+const selectedParentCategory = ref<StockCategory | null>(null)
+const filteredParentCategories = ref<StockCategory[]>([])
 
-const selectedCategory = ref();
-const filteredCategories = ref();
-
-const search = (event: AutoCompleteCompleteEvent) => {
-  const query = event.query?.toLowerCase() || ''
-  if (!query) {
-    filteredCategories.value = [...stockCategoryStore.stockCategories]
-    return
-  }
-
-  filteredCategories.value =
-    stockCategoryStore.stockCategories.filter((category) =>
-      category.name.toLowerCase().includes(query)
-    )
-}
-
-const selectedParentGroup = ref()
-const filteredParentGroups = ref()
 
 const searchParentGroup = (event: AutoCompleteCompleteEvent) => {
   const query = event.query?.toLowerCase() || ''
+  const groups = stockGroups.value ?? []
+  filteredParentGroups.value = query
+    ? groups.filter(g => g.groupName.toLowerCase().includes(query))
+    : [...groups]
+}
 
-  if (!query) {
-    filteredParentGroups.value = [...stockGroupStore.stockGroups]
-    return
+const searchParentCategory = (event: AutoCompleteCompleteEvent) => {
+  const query = event.query?.toLowerCase() || ''
+  const categories = (stockCategories.value ?? []).filter(
+    c => c.id !== product.value.id
+  )
+  filteredParentCategories.value = query
+    ? categories.filter(c => c.name.toLowerCase().includes(query))
+    : [...categories]
+}
+
+
+const openNew = () => {
+  product.value = {}
+  selectedParentGroup.value = null
+  selectedParentCategory.value = null
+  submitted.value = false
+  productDialog.value = true
+}
+
+const hideDialog = () => {
+  productDialog.value = false
+  submitted.value = false
+}
+
+const editProduct = (prod: StockCategory) => {
+  product.value = { ...prod }
+  selectedParentGroup.value = stockGroups.value?.find(g => g.id === prod.parentGroupId) ?? null
+  selectedParentCategory.value = stockCategories.value?.find(c => c.id === prod.parentCategoryId) ?? null
+  productDialog.value = true
+}
+
+async function saveProduct() {
+  submitted.value = true
+  if (!product.value.name?.trim()) return
+
+  const payload: Partial<StockCategory> = {
+    ...product.value,
+    parentGroupId: selectedParentGroup.value?.id ?? undefined,
+    parentCategoryId: selectedParentCategory.value?.id ?? undefined,
   }
 
-  filteredParentGroups.value =
-    stockGroupStore.stockGroups.filter((group) =>
-      group.groupName.toLowerCase().includes(query)
-    )
-}
-const addStockGroup = () => {
- router.push('/inventory/stock-group')
+  try {
+    if (payload.id) {
+      await updateMutation.mutateAsync({ id: payload.id, payload })
+    } else {
+      await createMutation.mutateAsync(payload)
+    }
+    hideDialog()
+    product.value = {}
+    selectedParentGroup.value = null
+    selectedParentCategory.value = null
+  } catch {
+    hideDialog()
+  }
 }
 
+const confirmDeleteProduct = (prod: StockCategory) => {
+  product.value = prod
+  deleteProductDialog.value = true
+}
+
+async function deleteProduct() {
+  if (!product.value.id) return
+  try {
+    await deleteMutation.mutateAsync(product.value.id)
+    product.value = {}
+  } catch { /* toast handled in composable */ }
+  finally {
+    deleteProductDialog.value = false
+  }
+}
+
+const confirmDeleteSelected = () => {
+  deleteProductsDialog.value = true
+}
+
+async function deleteSelectedProducts() {
+  if (!selectedProducts.value.length) return
+  try {
+    await Promise.all(selectedProducts.value.map(p => deleteMutation.mutateAsync(p.id!)))
+    selectedProducts.value = []
+  } catch { /* toast handled in composable */ }
+  finally {
+    deleteProductsDialog.value = false
+  }
+}
+
+const exportCSV = () => dt.value.exportCSV()
 </script>
+
 <template>
   <div>
     <div class="card">
       <Toolbar class="mb-6">
         <template #start>
-          <Button label="New" icon="pi pi-plus" class="mr-2" @click="openNew()" />
-          <Button label="Delete" icon="pi pi-trash" severity="danger" @click="confirmDeleteSelected()"
-            variant="outlined" style="margin-left: 10px"  :disabled="!selectedProducts || !selectedProducts.length"/>
+          <Button label="New" icon="pi pi-plus" class="mr-2" @click="openNew" />
+          <Button
+            style="margin-left: 10px;"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            variant="outlined"
+            @click="confirmDeleteSelected"
+            :disabled="!selectedProducts.length"
+          />
         </template>
         <template #end>
-          <Button label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV()" />
+          <Button label="Export" icon="pi pi-upload" severity="secondary" @click="exportCSV" />
         </template>
       </Toolbar>
-      <DataTable ref="dt" dataKey="id" :value="stockCategoryStore.stockCategories" v-model:selection="selectedProducts"
-        :filters="filters" :paginator="true" :rows="5"
+
+      <DataTable
+        ref="dt"
+        :loading="isLoading"
+        v-model:selection="selectedProducts"
+        :value="stockCategories"
+        dataKey="id"
+        :paginator="true"
+        :rows="5"
+        :filters="filters"
         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
         :rowsPerPageOptions="[5, 10, 15]"
-        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories" :exportFilename="filename">
-
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
+        :exportFilename="downloadFilename"
+      >
         <template #header>
           <div class="flex flex-wrap gap-2 items-center justify-between">
             <h4 class="m-0">Stock Categories</h4>
             <IconField>
-              <InputIcon>
-                <i class="pi pi-search" />
-              </InputIcon>
+              <InputIcon><i class="pi pi-search" /></InputIcon>
               <InputText v-model="filters['global'].value" placeholder="Search..." />
             </IconField>
           </div>
         </template>
 
-        <Column selectionMode="multiple" style="width: 3rem" :exportable="false"></Column>
+        <Column selectionMode="multiple" style="width: 3rem" :exportable="false" />
         <Column header="#" style="width: 4rem">
-          <template #body="slotProps">
-            {{ slotProps.index + 1 }}
-          </template>
+          <template #body="{ index }">{{ index + 1 }}</template>
         </Column>
-        <Column field="name" header="Name"></Column>
-        <Column field="aliasName" header="Alias"></Column>
-        <Column field="parentGroupName" header="Parent Group"></Column>
-        <Column field="parentCategoryName" header="Parent Category"></Column>
-        <Column :exportable="false" style="min-width: 12rem;">
-          <template #body="slotProps">
-            <Button icon="pi pi-pencil" variant="outlined" rounded class="mr-2" @click="editProduct(slotProps.data)" />
-            <Button icon="pi pi-trash" variant="outlined" rounded severity="danger" style="margin-left: 5px;"
-              @click="confirmDeleteProduct(slotProps.data)" />
+        <Column field="name" header="Name" sortable style="min-width: 10rem" />
+        <Column field="aliasName" header="Alias" sortable style="min-width: 10rem" />
+        <Column field="parentGroupName" header="Parent Group" sortable style="min-width: 10rem" />
+        <Column field="parentCategoryName" header="Parent Category" sortable style="min-width: 10rem" />
+        <Column :exportable="false" style="min-width: 12rem">
+          <template #body="{ data }">
+            <Button icon="pi pi-pencil" variant="outlined" rounded class="mr-2" @click="editProduct(data)" />
+            <Button style="margin-left: 5px;" icon="pi pi-trash" variant="outlined" rounded severity="danger" @click="confirmDeleteProduct(data)" />
           </template>
         </Column>
       </DataTable>
     </div>
-    <!--Create new products-->
-    <Dialog v-model:visible="CreateDialog" :style="{ width: '450px' }" header="Create Stock Category" :modal="true">
+
+    <Dialog v-model:visible="productDialog" :style="{ width: '450px' }" header="Category Details" :modal="true">
       <div class="flex flex-col gap-6">
         <div>
           <label for="name" class="block font-bold mb-3">Name</label>
-          <InputText id="name" v-model.trim="products.name" required="true" autofocus :invalid="submitted && !products.name" fluid />
-          <small v-if="submitted && !products.name" class="text-red-500">Name is required.</small>
+          <InputText id="name" v-model.trim="product.name" autofocus :invalid="submitted && !product.name" fluid />
+          <small v-if="submitted && !product.name" class="text-red-500">Name is required.</small>
         </div>
         <div>
           <label for="aliasName" class="block font-bold mb-3">Alias Name</label>
-          <InputText id="aliasName" v-model.trim="products.aliasName" required="true" autofocus
-            :invalid="submitted && !products.aliasName" fluid />
-          <small v-if="submitted && !products.aliasName" class="text-red-500">Alias Name is required.</small>
+          <InputText id="aliasName" v-model.trim="product.aliasName" fluid />
         </div>
         <div>
-          <label for="parentCategoryid" class="block font-bold mb-3">Parent Category</label>
-          <AutoComplete  v-model="selectedCategory" optionLabel="name" :suggestions="filteredCategories"
-            @complete="search">
-            <template #option="slotProps">
-              <div class="flex items-center">
-                <div>{{ slotProps.option.name }}</div>
-              </div>
+          <label class="block font-bold mb-3">Parent Group</label>
+          <AutoComplete
+            v-model="selectedParentGroup"
+            optionLabel="groupName"
+            :suggestions="filteredParentGroups"
+            @complete="searchParentGroup"
+            fluid
+          >
+            <template #option="{ option }">{{ option.groupName }}</template>
+            <template #header>
+              <div class="font-medium px-3 py-2">Available Groups</div>
             </template>
+          </AutoComplete>
+        </div>
+        <div>
+          <label class="block font-bold mb-3">Parent Category</label>
+          <AutoComplete
+            v-model="selectedParentCategory"
+            optionLabel="name"
+            :suggestions="filteredParentCategories"
+            @complete="searchParentCategory"
+            fluid
+          >
+            <template #option="{ option }">{{ option.name }}</template>
             <template #header>
               <div class="font-medium px-3 py-2">Available Categories</div>
             </template>
           </AutoComplete>
         </div>
-        <div>
-          <label for="parentGroupid" class="block font-bold mb-3">Parent Group</label>
-          <AutoComplete v-model="selectedParentGroup" optionLabel="groupName" :suggestions="filteredParentGroups" @complete="searchParentGroup">
-            <template #option="slotProps">
-                <div class="flex items-center">
-                    <div>{{ slotProps.option.groupName }}</div>
-                </div>
-            </template>
-            <template #header>
-                <div class="font-medium px-3 py-2">Available Groups</div>
-            </template>
-            <template #footer>
-                <div class="px-3 py-3">
-                    <Button label="Add New" fluid severity="secondary" text size="small" icon="pi pi-plus" @click="addStockGroup()" />
-                </div>
-            </template>
-        </AutoComplete>
-        </div>
       </div>
       <template #footer>
         <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-        <Button label="Save" icon="pi pi-check" @click="saveProduct()" />
+        <Button
+          label="Save"
+          icon="pi pi-check"
+          @click="saveProduct"
+          :loading="createMutation.isPending.value || updateMutation.isPending.value"
+        />
       </template>
     </Dialog>
 
-    <!--Delete products-->
-    <Dialog v-model:visible="deleteDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+    <Dialog v-model:visible="deleteProductDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
       <div class="flex items-center gap-4">
         <i class="pi pi-exclamation-triangle !text-3xl" />
-        <span v-if="products">Are you sure you want to delete {{ products.name }} <b> </b>?</span>
+        <span>Are you sure you want to delete <b>{{ product.name }}</b>?</span>
       </div>
       <template #footer>
-        <Button label="No" icon="pi pi-times" text severity="secondary" variant="text" @click="hideDeleteDialog()" />
-        <Button label="Yes" icon="pi pi-check" severity="danger" @click="deleteProducts()" />
+        <Button label="No" icon="pi pi-times" text severity="secondary" @click="deleteProductDialog = false" />
+        <Button label="Yes" icon="pi pi-check" severity="danger" :loading="deleteMutation.isPending.value" @click="deleteProduct" />
+      </template>
+    </Dialog>
+
+    <Dialog v-model:visible="deleteProductsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
+      <div class="flex items-center gap-4">
+        <i class="pi pi-exclamation-triangle !text-3xl" />
+        <span>Are you sure you want to delete {{ selectedProducts.length }} selected categories?</span>
+      </div>
+      <template #footer>
+        <Button label="No" icon="pi pi-times" text severity="secondary" @click="deleteProductsDialog = false" />
+        <Button label="Yes" icon="pi pi-check" text severity="danger" :loading="deleteMutation.isPending.value" @click="deleteSelectedProducts" />
       </template>
     </Dialog>
   </div>
