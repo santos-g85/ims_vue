@@ -156,7 +156,7 @@ watch(selectedParentGroup, (val) => {
         <Column :exportable="false" style="min-width:12rem">
           <template #body="slotProps">
             <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editProduct(slotProps.data)" />
-            <Button icon="pi pi-trash" outlined rounded severity="danger"
+            <Button style="margin-left:5px;" icon="pi pi-trash" outlined rounded severity="danger"
               @click="confirmDeleteProduct(slotProps.data)" />
           </template>
         </Column>
@@ -197,7 +197,7 @@ watch(selectedParentGroup, (val) => {
 
       <template #footer>
         <Button label="Cancel" icon="pi pi-times" text @click="hideDialog" />
-        <Button label="Save" icon="pi pi-check" @click="saveProduct" />
+        <Button label="Save" icon="pi pi-check" :loading="createMutation.isPending.value || updateMutation.isPending.value" @click="saveProduct" />
       </template>
     </Dialog>
 
@@ -209,7 +209,7 @@ watch(selectedParentGroup, (val) => {
       </div>
       <template #footer>
         <Button label="No" icon="pi pi-times" text @click="deleteProductDialog = false" />
-        <Button label="Yes" icon="pi pi-check" @click="deleteProduct" />
+        <Button label="Yes" icon="pi pi-check" :loading="deleteMutation.isPending.value" @click="deleteProduct" />
       </template>
     </Dialog>
 
@@ -220,8 +220,8 @@ watch(selectedParentGroup, (val) => {
         <span>Are you sure you want to delete the selected groups?</span>
       </div>
       <template #footer>
-        <Button label="No" icon="pi pi-times" text @click="deleteProductsDialog = false" />
-        <Button label="Yes" icon="pi pi-check" text @click="deleteSelectedProducts" />
+        <Button label="No" icon="pi pi-times"  @click="deleteProductsDialog = false" />
+        <Button label="Yes" icon="pi pi-check" :loading="deleteMutation.isPending.value" @click="deleteSelectedProducts" />
       </template>
     </Dialog>
   </div>
