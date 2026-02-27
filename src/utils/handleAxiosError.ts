@@ -5,7 +5,11 @@ export function getErrorMessage(error: unknown): string {
     const axiosErr = error as AxiosError
     const data = axiosErr.response?.data as { detail?: string } | undefined
     if (data?.detail) {
-      return data.detail
+      let message = data.detail
+      if (message.includes('*')) {
+        message = message.substring(message.indexOf('*') + 1)
+      }
+      return message.trim()
     } else if (axiosErr.message) {
       return axiosErr.message
     }
