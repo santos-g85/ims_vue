@@ -37,6 +37,16 @@ const router = createRouter({
           component: () => import('@/views/Inventory/StockCategory.vue'),
         },
         {
+          path: 'stock-item',
+          name: 'stock-item',
+          component: () => import('@/views/Inventory/StockItems.vue'),
+        },
+        {
+          path: 'fatwise-settings',
+          name: 'fatwise-settings',
+          component: () => import('@/views/Inventory/FatwiseSettings.vue'),
+        },
+        {
           path: 'bom-list',
           name: 'bom-list',
           component: () => import('@/views/Inventory/BOMList.vue'),

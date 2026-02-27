@@ -12,6 +12,7 @@ import Toast from 'primevue/toast'
 import '@/assets/tailwind.css'
 import '@/assets/styles.scss'
 import { Form } from '@primevue/forms';
+import { VueQueryPlugin } from '@tanstack/vue-query'
 
 const app = createApp(App)
 app.use(PrimeVue, {
@@ -22,8 +23,8 @@ app.use(PrimeVue, {
     },
   },
 })
-
 app.use(createPinia())
+app.use(VueQueryPlugin)
 app.use(router)
 app.use(ToastService)
 app.component('Toast', Toast);

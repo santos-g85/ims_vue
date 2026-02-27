@@ -47,16 +47,20 @@ const onFormSubmit = async (e: FormSubmitEvent) => {
   // e.errors: An object that holds any validation errors for the invalid fields in the form.
   // e.values: An object containing the current values of all form fields.
   // e.reset: A function that resets the form to its initial state.
+  
+ if (!e.valid || !e.values) {
+    return
+  }
+
   const loginRequest: LoginRequest = {
     email: e.values.email,
     password: e.values.password,
   }
-  if (e.valid) {
-    await authstore.login(loginRequest)
-    toast.add({ severity: 'success', summary: 'Login successful.', life: 2000 })
-    router.push('/dashboard')
-    e.reset()
-  }
+
+  await authstore.login(loginRequest)
+  toast.add({ severity: 'success', summary: 'Login successful.', life: 2000 })
+  router.push('/dashboard')
+  e.reset()
 }
 </script>
 

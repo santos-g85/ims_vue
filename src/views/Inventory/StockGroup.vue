@@ -5,7 +5,11 @@ import { FilterMatchMode } from '@primevue/core/api'
 import { useToast } from 'primevue/usetoast'
 import type { StockGroup } from '@/types/Stock'
 import { watch } from 'vue'
-import type { Axios, AxiosError } from 'axios'
+
+type AutoCompleteCompleteEvent = {
+  originalEvent: Event
+  query: string
+}
 
 const stockGroupStore = useStockGroupStore()
 onMounted(async () => {
@@ -88,12 +92,11 @@ async function deleteProduct() {
       product.value = {}
       toast.add({ severity: 'success', summary: 'Success', detail: 'Group Deleted', life: 3000 })
     } catch (error: unknown) {
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: (error as unknown)?.response?.data?.message || 'Failed to delete group',
-        life: 3000
-      })
+      if(error instanceof Error) {
+        toast.add({ severity: 'error', summary: 'Error', detail: error.message, life: 3000 })
+      } else {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Operation failed', life: 3000 })
+      }
     }
   }
 }
@@ -118,7 +121,8 @@ async function deleteSelectedProducts() {
 
 const selectedParentGroup = ref()
 const filteredParentGroups = ref()
-const searchParentGroup = (event: any) => {
+
+const searchParentGroup = (event: AutoCompleteCompleteEvent) => {
   const query = event.query?.toLowerCase() || ''
 
   let groups = stockGroupStore.stockGroups
@@ -160,7 +164,7 @@ watch(selectedParentGroup, (val) => {
             severity="danger"
             variant="outlined"
             @click="confirmDeleteSelected"
-            style="margin-left: 10px" 
+            style="margin-left: 10px"
             :disabled="!selectedProducts || !selectedProducts.length"
           />
         </template>

@@ -1,26 +1,26 @@
-import type { StockCategory, StockGroup, StockGroupCreate } from '@/types/Stock'
-import api from '../config/ApiInterseptor'
+import type { StockCategory, StockGroup} from '@/types/Stock'
+import api from './ApiInterseptor'
 const baseUrl : string = '/ims/v1'
-export const StockGroupService = {
-  async getStockGroups(): Promise<StockGroup[]> {
-    const response = await api.get<StockGroup[]>(`${baseUrl}/stock-groups`)
-    return response.data
+
+export const StockGroupService =
+{
+   fetchAll: async (): Promise<StockGroup[]> => {
+    const { data } = await api.get(`${baseUrl}/stock-groups`)
+    return data
+  },
+  create: async (payload: Partial<StockGroup>) => {
+   const { data } = await api.post(`${baseUrl}/stock-groups`, payload)
+   return data
+  },
+  update: async (id: number, payload: Partial<StockGroup>) => {
+    await api.put(`${baseUrl}/stock-groups/${id}`, payload)
   },
 
-  async createStockGroup(data: Partial<StockGroupCreate>): Promise<StockGroupCreate> {
-    const response = await api.post<StockGroupCreate>(`${baseUrl}/stock-groups`, data)
-    return response.data
-  },
-
-  async updateStockGroup(id: number, data: Partial<StockGroup>): Promise<StockGroup> {
-    const response = await api.put<StockGroup>(`${baseUrl}/stock-groups/${id}`, data)
-    return response.data
-  },
-
-  async deleteStockGroup(id: number): Promise<void> {
+  delete: async (id: number) => {
     await api.delete(`${baseUrl}/stock-groups/${id}`)
-  },
+  }
 }
+
 export const StockCategoryService = {
 
   async getStockCategories(): Promise<StockCategory[]> {

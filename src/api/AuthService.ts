@@ -1,5 +1,5 @@
 import type { LoginRequest, User } from '@/types/Auth'
-import api from '../config/ApiInterseptor'
+import api from './ApiInterseptor'
 const baseUrl : string = '/ims/v1'
 
 export const AuthService = {

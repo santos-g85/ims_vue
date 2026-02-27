@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { StockCategoryService, StockGroupService } from '@/service/StockService'
+import { StockCategoryService, StockGroupService } from '@/api/StockService'
 import type { StockGroup, StockCategory } from '@/types/Stock'
 
 export const useStockGroupStore = defineStore('stockGroup', () => {

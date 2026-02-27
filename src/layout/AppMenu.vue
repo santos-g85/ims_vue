@@ -43,6 +43,7 @@ const model = ref<MenuItem[]>([
           },
           {
             label: 'Stock Item',
+            to: '/inventory/stock-item',
           },
           {
             label: 'GoDown',
@@ -55,6 +56,7 @@ const model = ref<MenuItem[]>([
           },
           {
             label: 'Fatwise Unit',
+            to: '/inventory/fatwise-settings',
           },
         ],
       },

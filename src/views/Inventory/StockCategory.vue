@@ -6,6 +6,11 @@ import { useToast } from 'primevue/usetoast'
 import type { StockCategory } from '@/types/Stock'
 import router from '@/router'
 
+type AutoCompleteCompleteEvent = {
+  originalEvent: Event
+  query: string
+}
+
 const stockCategoryStore = useStockCategoryStore()
 const stockGroupStore = useStockGroupStore()
 
@@ -67,7 +72,7 @@ const confirmDeleteProduct = (product: StockCategory) => {
 const selectedCategory = ref();
 const filteredCategories = ref();
 
-const search = (event: any) => {
+const search = (event: AutoCompleteCompleteEvent) => {
   const query = event.query?.toLowerCase() || ''
   if (!query) {
     filteredCategories.value = [...stockCategoryStore.stockCategories]
@@ -83,7 +88,7 @@ const search = (event: any) => {
 const selectedParentGroup = ref()
 const filteredParentGroups = ref()
 
-const searchParentGroup = (event: any) => {
+const searchParentGroup = (event: AutoCompleteCompleteEvent) => {
   const query = event.query?.toLowerCase() || ''
 
   if (!query) {
