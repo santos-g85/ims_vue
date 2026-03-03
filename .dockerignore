@@ -1,0 +1,17 @@
+# Dependencies & Build Output
+node_modules/
+dist/
+.vite/
+.cache/
+
+# Git, IDE, and System files
+.git/
+.vscode/
+.DS_Store
+
+# Logs and Env
+*.log
+.env*
+
+README.node_modules
+.editorconfig

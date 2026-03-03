@@ -10,12 +10,22 @@ const router = createRouter({
     {
       path: '/dashboard',
       component: AppLayout,
+      // meta: {
+      //   requiresAuth: true,
+      //   permissions: ['view_inventory'],
+      // },
       children: [{ path: '', name: 'dashboard', component: () => import('@/views/HomeView.vue') }],
     },
     {
       path: '/charts-of-accounts',
       component: AppLayout,
-      children: [{ path: '', name: 'charts-of-accounts', component: () => import('@/views/accounts/ChartOfAccounts.vue') }],
+      children: [
+        {
+          path: '',
+          name: 'charts-of-accounts',
+          component: () => import('@/views/accounts/ChartOfAccounts.vue'),
+        },
+      ],
     },
     {
       path: '/inventory',
@@ -64,6 +74,11 @@ const router = createRouter({
           path: 'login',
           name: 'Sign In',
           component: () => import('@/views/auth/LoginView.vue'),
+        },
+         {
+          path: 'signup',
+          name: 'Sign Up',
+          component: () => import('@/views/auth/SignUpView.vue'),
         },
       ],
     },

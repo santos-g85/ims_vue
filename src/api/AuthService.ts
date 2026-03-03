@@ -5,7 +5,7 @@ const baseUrl : string = '/ims/v1'
 export const AuthService = {
 
   async login(data: LoginRequest){
-    const response = await api.post<User>(`${baseUrl}/auth/login`, data)
+    const response = await api.post(`${baseUrl}/auth/login`, data)
     return response.data;
   },
 

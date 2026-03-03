@@ -4,14 +4,38 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import {  z } from 'zod'
 import { useToast } from 'primevue/usetoast'
 import { type FormSubmitEvent } from '@primevue/forms'
-import { useAuthStore } from '@/stores/Auth.store'
-import type { LoginRequest } from '@/types/Auth'
 import { ENV } from '@/env'
 import router from '@/router'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { AuthService } from '@/api/AuthService'
+import type { LoginRequest } from '@/types/Auth'
 import { useImageStore } from '@/stores/Image.store'
 const imageStore = useImageStore()
 
-const authstore = useAuthStore()
+const queryClient = useQueryClient()
+
+const loginMutation = useMutation({
+
+  mutationFn: (data: LoginRequest) => AuthService.login(data),
+  onSuccess: async () => {
+    // Fetch user profile after login
+    await queryClient.invalidateQueries({ queryKey: ['me'] })
+    toast.add({
+      severity: 'success',
+      summary: 'Login successful.',
+      life: 2000,
+    })
+    router.push('/dashboard')
+  },
+  onError: () => {
+    toast.add({
+      severity: 'error',
+      summary: 'Invalid credentials.',
+      life: 3000,
+    })
+  },
+})
+
 const toast = useToast()
 
 const initialValues = ref({
@@ -47,21 +71,16 @@ const onFormSubmit = async (e: FormSubmitEvent) => {
   // e.errors: An object that holds any validation errors for the invalid fields in the form.
   // e.values: An object containing the current values of all form fields.
   // e.reset: A function that resets the form to its initial state.
-  
- if (!e.valid || !e.values) {
-    return
-  }
 
+  if (!e.valid || !e.values) return
   const loginRequest: LoginRequest = {
     email: e.values.email,
     password: e.values.password,
   }
-
-  await authstore.login(loginRequest)
-  toast.add({ severity: 'success', summary: 'Login successful.', life: 2000 })
-  router.push('/dashboard')
+  await loginMutation.mutateAsync(loginRequest)
   e.reset()
 }
+
 </script>
 
 <template>
@@ -116,6 +135,7 @@ const onFormSubmit = async (e: FormSubmitEvent) => {
           severity="success"
           class="mt-4"
           style="margin-top: 15px"
+          :loading="loginMutation.isPending.value"
         />
         <Divider layout="horizontal" class="!flex md:!hidden" align="center"><b>Or</b></Divider>
         <Button
