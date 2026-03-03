@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { ENV } from '@/env'
 import { AuthService } from '@/api/AuthService'
+import { getTokenFromCookie } from '@/utils/getAccessToken'
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
@@ -17,13 +18,6 @@ const AUTH_HEADER = 'Authorization'
 const TENANT_HEADER = 'X-Tenant-ID'
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh']
 
-const getTokenFromCookie = (): string | null => {
-  const match = document.cookie.match(
-    new RegExp(`(?:^|; )${COOKIE_TOKEN_KEY}=([^;]*)`)
-  )
-  return match && match[1] ? decodeURIComponent(match[1]) : null
-}
-
 const api = axios.create({
   baseURL: ENV.API_URL,
   withCredentials: true,
@@ -36,7 +30,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = getTokenFromCookie()
+    const token = getTokenFromCookie(COOKIE_TOKEN_KEY)
     if (token) {
       config.headers[AUTH_HEADER] = `Bearer ${token}`
     }
